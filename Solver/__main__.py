@@ -191,24 +191,24 @@ class Network:
         return e
 
 class SolveOneHourMaxPresents:
-    """"""
+    """183 presents in 59 minutes"""
     def __init__(self, network:Network) -> None:
         """"""
         self.network = network
         self.__visited = []
-        self.__presents = 0
-        self.__elapsed = 0
+        self.presents = 0
+        self.elapsed = 0
         self.__maximum_elapsed = 60
         self.finished = False
     def step(self) -> None:
         """"""
-        logging.info("Location: %s Presents: %s  Elapsed: %s", self.network.current_node, self.__presents, self.__elapsed)
+        logging.info("Location: %s Presents: %s  Elapsed: %s", self.network.current_node, self.presents, self.elapsed)
         edges = self.network.get_edges(self.network.current_node)
         chosen = None
         highest = 0
         visited_edges:list[Edge] = []
         for edge in edges:
-            if edge.minutes + self.__elapsed > self.__maximum_elapsed:
+            if edge.minutes + self.elapsed > self.__maximum_elapsed:
                 # skip nodes that mean we have taken too long
                 continue
             other = edge.get_other_node(self.network.current_node)
@@ -241,8 +241,8 @@ class SolveOneHourMaxPresents:
 
         self.network.current_node = dest.name
         self.__visited.append(dest.name)
-        self.__presents += dest.presents
-        self.__elapsed += chosen.minutes
+        self.presents += dest.presents
+        self.elapsed += chosen.minutes
 
 class App:
     """"""
@@ -258,6 +258,13 @@ class App:
         self.__solver = SolveOneHourMaxPresents(Network())
     def on_render(self) -> None:
         self.__display_surf.blit(self.__map, self.__map_rect)
+        
+        colour = (0x00, 0x00, 0x00)
+        img = self.__font.render(str("Location: {0} Presents: {1} Elapsed: {2}".format(self.__solver.network.current_node, self.__solver.presents, self.__solver.elapsed)), True, colour)
+        left = 0
+        top = 0
+        self.__display_surf.blit(img, (left, top))
+
         self.__solver.network.draw(self.__display_surf, self.__font, self.__scale)
         pygame.display.update()
     def on_event(self, event) -> None:
