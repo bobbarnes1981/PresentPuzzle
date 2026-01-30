@@ -9,7 +9,17 @@ import time
 # external imports
 import pygame
 
+class Location:
+    """"""
+    def __init__(self, name:str, x:int, y:int) -> None:
+        self.__name = name
+        self.__x = x
+        self.__y = y
+    def draw(self, surface:pygame.Surface, scale:float) -> None:
+        pygame.draw.circle(surface, (0xff, 0x00, 0x00), (self.__x/scale, self.__y/scale), 10)
+
 class App:
+    """"""
     def __init__(self, delay:float) -> None:
         self.__running = True
         self.__display_surf = None
@@ -17,8 +27,19 @@ class App:
         self.__counter = 0
         self.__delay = 1.0
         self.__size = None
+        self.__scale = 2.5
+        self.__locations = [
+            Location("Plymouth", 890, 2035),
+            Location("Southampton", 1280, 1920),
+            Location("Cardiff", 1032, 1791),
+            Location("Swansea", 927, 1759),
+            Location("Brighton", 1459, 1936),
+            Location("Dover", 1658, 1861),
+        ]
     def on_render(self) -> None:
         self.__display_surf.blit(self.__map, self.__map_rect)
+        for location in self.__locations:
+            location.draw(self.__display_surf, self.__scale)
         pygame.display.update()
     def on_event(self, event) -> None:
         """Handle event"""
@@ -44,13 +65,20 @@ class App:
         logging.info("Font: %s", font_name)
         self.__font = pygame.font.SysFont(font_name, 22)
 
-        self.__map = pygame.image.load(os.path.join("Over_gb", "GBOverviewPlus.tif"))
+        map = pygame.image.load(os.path.join("Over_gb", "GBOverviewPlus.tif"))
+
+        crop_w = 1769
+        crop_h = 2197
+        self.__map = pygame.Surface((crop_w, crop_h))
+        
+        self.__map.blit(map, (0, 0), (902, 753, crop_w, crop_h))
+
         w = self.__map.get_width()
         h = self.__map.get_height()
         logging.info("(%s,%s)", w, h)
 
-        w = w / 5
-        h = h / 5
+        w = w / self.__scale
+        h = h / self.__scale
         self.__size = (w, h)
         self.__map = pygame.transform.scale(self.__map, (w, h))
 
