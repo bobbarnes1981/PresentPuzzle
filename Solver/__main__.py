@@ -11,8 +11,9 @@ import pygame
 
 class Location:
     """"""
-    def __init__(self, name:str, x:int, y:int) -> None:
+    def __init__(self, name:str, presents:int, x:int, y:int) -> None:
         self.__name = name
+        self.__present = presents
         self.__x = x
         self.__y = y
     def draw(self, surface:pygame.Surface, scale:float) -> None:
@@ -29,12 +30,28 @@ class App:
         self.__size = None
         self.__scale = 2.5
         self.__locations = [
-            Location("Plymouth", 890, 2035),
-            Location("Southampton", 1280, 1920),
-            Location("Cardiff", 1032, 1791),
-            Location("Swansea", 927, 1759),
-            Location("Brighton", 1459, 1936),
-            Location("Dover", 1658, 1861),
+            Location("Aberdeen", 8, 1184, 533),
+            Location("Belfast", 12, 688, 1075),
+            Location("Birmingham", 15, 1212, 1573),
+            Location("Blackpool", 7, 1058, 1274),
+            Location("Brighton", 6, 1459, 1936),
+            Location("Cardiff", 13, 1032, 1791),
+            Location("Carlisle", 4, 1076, 1035),
+            Location("Cork", 9, 309, 1668),
+            Location("Dover", 3, 1658, 1861),
+            Location("Dublin", 10, 632, 1364),
+            Location("Edinburgh", 15, 1047, 800),
+            Location("Fort William", 2, 819, 597),
+            Location("Glasgow", 6, 916, 817),
+            Location("London", 18, 1460, 1784),
+            Location("Manchester", 14, 1164, 1351),
+            Location("Newcastle", 11, 1246, 1017),
+            Location("Norwich", 8, 1643, 1528),
+            Location("Nottingham", 5, 1311, 1468),
+            Location("Plymouth", 14, 890, 2035),
+            Location("Southampton", 2, 1280, 1920),
+            Location("Swansea", 7, 927, 1759),
+            Location("York", 13, 1317, 1242),
         ]
     def on_render(self) -> None:
         self.__display_surf.blit(self.__map, self.__map_rect)
