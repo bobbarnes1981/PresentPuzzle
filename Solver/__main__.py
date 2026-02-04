@@ -305,7 +305,7 @@ class App:
         """Init"""
         pygame.init()
         pygame.display.set_caption("Solver")
-        self.__running: bool = True
+        self.__running = True
         font_name: str = pygame.font.get_default_font()
         logging.info("Font: %s", font_name)
         self.__font = pygame.font.SysFont(font_name, 18)
