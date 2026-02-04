@@ -63,7 +63,7 @@ class Edge:
         surface.blit(img, (text_left, text_top))
     def has_node(self, node_name: str) -> bool:
         """Returns true if the edge references the node"""
-        return self.a.name == node_name or self.b.name == node_name
+        return node_name in (self.a.name, self.b.name)
     def get_other_node(self, node_name: str) -> Node:
         """Returns the name of the other node on the edge"""
         if self.a.name == node_name:
@@ -74,6 +74,7 @@ class Network:
     """Class representing a network"""
     def __init__(self) -> None:
         """Initialise the network"""
+        # pylint: disable=too-many-locals
         aberdeen: Node      = Node("Aberdeen", 8, 1184, 533)
         belfast: Node       = Node("Belfast", 12, 688, 1075)
         birmingham: Node    = Node("Birmingham", 15, 1212, 1573)
@@ -168,6 +169,7 @@ class Network:
         """Draw the network"""
         for edge in self.edges:
             edge.draw(surface, font, scale)
+        # pylint: disable=consider-using-dict-items
         for key in self.nodes:
             self.nodes[key].draw(surface, font, scale, key == self.current_node)
     def get_edges(self, node_name: str) -> list[Edge]:
@@ -180,6 +182,7 @@ class Network:
 
 class SolveOneHourMaxPresents:
     """Solve for max presents in one hour, 183 presents in 59 minutes"""
+    # pylint: disable=too-few-public-methods
     def __init__(self, network: Network) -> None:
         """Initialise the solver"""
         self.network: Network = network
@@ -234,10 +237,12 @@ class SolveOneHourMaxPresents:
 
 class App:
     """Present Puzzle App"""
+    # pylint: disable=too-many-instance-attributes
     def __init__(self, delay: float) -> None:
         """Initialise the application"""
         self.__running: bool = True
         self.__display_surf: pygame.Surface
+        self.__font: pygame.font.Font
         self.__time: float = time.time()
         self.__counter: float = 0
         self.__steps: int = 0
@@ -281,7 +286,7 @@ class App:
         self.__running: bool = True
         font_name: str = pygame.font.get_default_font()
         logging.info("Font: %s", font_name)
-        self.__font: pygame.font.Font = pygame.font.SysFont(font_name, 18)
+        self.__font = pygame.font.SysFont(font_name, 18)
         map_surface: pygame.Surface = pygame.image.load(os.path.join("Over_gb", "GBOverviewPlus.tif"))
         crop_w: int = 1769
         crop_h: int = 2197
