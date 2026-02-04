@@ -17,12 +17,15 @@ class Node:
         self.presents: int = presents
         self.__x: int = x
         self.__y: int = y
+        self.visited = False
     def get_scaled_location(self, scale: float) -> tuple[float, float]:
         """Get the scaled location of the node"""
         return (self.__x/scale, self.__y/scale)
     def draw(self, surface: pygame.Surface, font: pygame.font.Font, scale: float, current: bool) -> None:
         """Draw the node"""
-        circle_colour: tuple = (0x00, 0xff, 0x00) if current else (0xff, 0x00, 0x00)
+        circle_colour: tuple = (0xff, 0x00, 0x00) if self.visited else (0x00, 0x00, 0x00)
+        if current:
+            circle_colour = (0x00, 0xff, 0x00)
         location: tuple[float, float] = self.get_scaled_location(scale)
         radius: int = 5
         pygame.draw.circle(surface, circle_colour, location, radius)
@@ -61,12 +64,12 @@ class Edge:
         text_left: float = left - (img.get_width()/2)
         text_top: float = top  - (img.get_height()/2)
         surface.blit(img, (text_left, text_top))
-    def has_node(self, node_name: str) -> bool:
+    def has_node(self, node: Node) -> bool:
         """Returns true if the edge references the node"""
-        return node_name in (self.a.name, self.b.name)
-    def get_other_node(self, node_name: str) -> Node:
+        return node in (self.a, self.b)
+    def get_other_node(self, node: Node) -> Node:
         """Returns the name of the other node on the edge"""
-        if self.a.name == node_name:
+        if self.a == node:
             return self.b
         return self.a
 
@@ -164,46 +167,66 @@ class Network:
             Edge(aberdeen, fort_william, 4),
             Edge(aberdeen, edinburgh, 3),
         ]
-        self.current_node = plymouth.name
+        self.__route: list[Node] = []
+        self.elapsed: int = 0
+        self.presents: int = 0
+        self.navigate_to(plymouth, None)
+    def current_node(self) -> Node:
+        """Get the current node"""
+        return self.__route[-1]
+    def navigate_to(self, node: Node, edge: Edge|None) -> None:
+        """Navigate to the node using the edge"""
+        # TODO: validate edge and node is valid combination
+        if node.visited is False:
+            self.presents += node.presents
+        node.visited = True
+        self.__route.append(node)
+        if edge is not None:
+            self.elapsed += edge.minutes
     def draw(self, surface: pygame.Surface, font: pygame.font.Font, scale: float) -> None:
         """Draw the network"""
         for edge in self.edges:
             edge.draw(surface, font, scale)
-        # pylint: disable=consider-using-dict-items
-        for key in self.nodes:
-            self.nodes[key].draw(surface, font, scale, key == self.current_node)
-    def get_edges(self, node_name: str) -> list[Edge]:
+        for _, node in self.nodes.items():
+            node.draw(surface, font, scale, node == self.current_node())
+        if len(self.__route) > 1:
+            step: float = 0xff / (len(self.__route) * 2)
+            colour:int = 0xff // 2
+            last_n: Node|None = None
+            for current_n in self.__route:
+                colour += int(step)
+                if last_n is not None:
+                    pygame.draw.line(surface, (colour, 0x00, 0x00), last_n.get_scaled_location(scale), current_n.get_scaled_location(scale), 4)
+                last_n = current_n
+    def get_edges(self, node: Node) -> list[Edge]:
         """Get a list of edges that reference the node"""
         e:list[Edge] = []
         for edge in self.edges:
-            if edge.has_node(node_name):
+            if edge.has_node(node):
                 e.append(edge)
         return e
 
 class SolveOneHourMaxPresents:
-    """Solve for max presents in one hour, 183 presents in 59 minutes"""
+    """Solve for max presents in one hour, 186 presents in 60 minutes"""
     # pylint: disable=too-few-public-methods
     def __init__(self, network: Network) -> None:
         """Initialise the solver"""
         self.network: Network = network
-        self.__visited: list[str] = []
-        self.presents: int = 0
-        self.elapsed: int = 0
         self.__maximum_elapsed: int = 60
         self.finished: bool = False
     def step(self) -> None:
         """Take one step"""
-        logging.info("Location: %s Presents: %s  Elapsed: %s", self.network.current_node, self.presents, self.elapsed)
-        edges: list[Edge] = self.network.get_edges(self.network.current_node)
+        logging.info("Location: %s Presents: %s  Elapsed: %s", self.network.current_node().name, self.network.presents, self.network.elapsed)
+        edges: list[Edge] = self.network.get_edges(self.network.current_node())
         chosen: Edge|None = None
         highest: float = 0
         visited_edges: list[Edge] = []
         for edge in edges:
-            if edge.minutes + self.elapsed > self.__maximum_elapsed:
+            if edge.minutes + self.network.elapsed > self.__maximum_elapsed:
                 # skip nodes that mean we have taken too long
                 continue
-            other: Node = edge.get_other_node(self.network.current_node)
-            if other.name in self.__visited:
+            other: Node = edge.get_other_node(self.network.current_node())
+            if other.visited:
                 # skip nodes that have been visited
                 visited_edges.append(edge)
                 continue
@@ -215,7 +238,9 @@ class SolveOneHourMaxPresents:
                 highest = pm
 
         if chosen is None:
+            # TODO: recurse? try different routes
             logging.info("Visited all edges")
+            # picking shortest edge
             lowest: int = 0
             for edge in visited_edges:
                 if chosen is None or edge.minutes < lowest:
@@ -227,13 +252,10 @@ class SolveOneHourMaxPresents:
             self.finished = True
             return
 
-        dest: Node = chosen.get_other_node(self.network.current_node)
+        dest: Node = chosen.get_other_node(self.network.current_node())
         logging.info("Travelling to: %s", dest.name)
 
-        self.network.current_node = dest.name
-        self.__visited.append(dest.name)
-        self.presents += dest.presents
-        self.elapsed += chosen.minutes
+        self.network.navigate_to(dest, chosen)
 
 class App:
     """Present Puzzle App"""
@@ -256,7 +278,7 @@ class App:
         """Render the application"""
         self.__display_surf.blit(self.__map, self.__map_rect)
         colour: tuple = (0x00, 0x00, 0x00)
-        img: pygame.Surface = self.__font.render(f"Location: {self.__solver.network.current_node} Presents: {self.__solver.presents} Elapsed: {self.__solver.elapsed}", True, colour)
+        img: pygame.Surface = self.__font.render(f"Location: {self.__solver.network.current_node().name} Presents: {self.__solver.network.presents} Elapsed: {self.__solver.network.elapsed}", True, colour)
         left: int = 0
         top: int = 0
         self.__display_surf.blit(img, (left, top))
@@ -294,7 +316,6 @@ class App:
         self.__map.blit(map_surface, (0, 0), (902, 753, crop_w, crop_h))
         w: float = self.__map.get_width()
         h: float = self.__map.get_height()
-        logging.info("(%s,%s)", w, h)
         w = w / self.__scale
         h = h / self.__scale
         self.__size = (w, h)
